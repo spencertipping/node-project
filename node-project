@@ -298,10 +298,10 @@ __3c6177256de0fddb721f534c3ad8c0ee
 meta::data('main', 'server.js');
 meta::data('name', 'node-project');
 meta::data('quiet', '1');
-meta::data('sources', <<'__8e6364795f174c5dcee3b469190ea4d9');
+meta::data('sources', <<'__a1936a8de1d61b88d47e8df86fd89416');
 # The source files for your program -- all except the server process:
-module.js
-__8e6364795f174c5dcee3b469190ea4d9
+src/module.js
+__a1936a8de1d61b88d47e8df86fd89416
 
 meta::data('watching', '1');
 meta::function('cat', 'join "\\n", retrieve(@_);');
@@ -354,17 +354,15 @@ my @ordered_keys = (grep(/^meta::/, @valid_keys), grep(! /^meta::/, @valid_keys)
 join "\n", map serialize_single($_), @ordered_keys;
 __d83ae43551c0f58d1d0ce576402a315a
 
-meta::function('dependencies', <<'__f34e466b5cb12b690e3f38a9e8238933');
+meta::function('dependencies', <<'__0d821e5275cc2f202b24eba9be2fb84b');
 # Returns an array of filenames in the order that they should be sent to node.
 # Generally you'd concatenate each file in order. Note that this function
 # doesn't return test files.
 sub files_from {grep length && ! /^\s*#/, split /\n+/, $_[0]}
 
 my @libraries = grep(s/^.*\//lib\//o, files_from libraries());
-my @sources   = map "src/$_", files_from sources();
-
-return @libraries, @sources;
-__f34e466b5cb12b690e3f38a9e8238933
+return @libraries, files_from sources();
+__0d821e5275cc2f202b24eba9be2fb84b
 
 meta::function('disable', 'chmod_self(sub {$_[0] & 0666});');
 meta::function('edit', <<'__6912fb43aad413e79cbf45e134866b6e');
