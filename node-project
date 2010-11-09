@@ -392,10 +392,12 @@ if (@attributes) {
 __6c445eea603f9863df0f8db445fd708e
 
 meta::function('extern', '&{$_[0]}(retrieve(@_[1 .. $#_]));');
-meta::function('generate', <<'__7600553b387959e90a9ee38e4c33dc92');
+meta::function('generate', <<'__5bb4fb0a5a145e67dc0cdd7f335d9714');
 # Generates JS and SDocP files from SDoc sources
+hook('bin/before-generate');
 qx|sdoc -p . lib src test|;
-__7600553b387959e90a9ee38e4c33dc92
+hook('bin/after-generate');
+__5bb4fb0a5a145e67dc0cdd7f335d9714
 
 meta::function('grep', <<'__ccbc55153c3f45db829686632273b93b');
 # Looks through attributes for a pattern. Usage is grep pattern [options], where
@@ -436,6 +438,11 @@ my ($data) = @_;
 fast_hash($data);
 __7c4145cf6e97dfb9ab04a613866751d3
 
+meta::function('hook', <<'__2a78c4b91bda6a0f662b4c7455c45a39');
+# Takes one or more hook files and executes them if they exist and are executable.
+-x && system for @_;
+__2a78c4b91bda6a0f662b4c7455c45a39
+
 meta::function('import', <<'__84d29edfe7ad2119465fdcf7d037ed1c');
 my $name  = pop @_;
 my @files = @_;
@@ -454,7 +461,6 @@ eval join '', <STDIN>;
 die $@ if $@;
 __4c7139ed5c9f65f38a33cf8f8a6cae27
 
-meta::function('includes', '# Attribute function::includes');
 meta::function('init', <<'__ab0fb510f67aa624ce16bb5ac5a86c6d');
 # Skeletal directories
 mkdir for qw/bin lib src test/;
@@ -496,11 +502,17 @@ EOF
 lib();
 __ab0fb510f67aa624ce16bb5ac5a86c6d
 
-meta::function('lib', <<'__0f06b9159cd5e465d1699c8b71a69ac4');
+meta::function('lib', <<'__e99e47d9a652b2b7f20a290a8133bc6f');
 # Regenerates lib/ directory
+hook('bin/before-lib');
+hook('bin/before-lib-clean');
 unlink $_ for <lib/*>;
+hook('bin/after-lib-clean');
+hook('bin/before-lib-download');
 qx|cd lib && wget $_| for split /\n+/, libraries();
-__0f06b9159cd5e465d1699c8b71a69ac4
+hook('bin/after-lib-download');
+hook('bin/after-lib');
+__e99e47d9a652b2b7f20a290a8133bc6f
 
 meta::function('load-state', <<'__878f141333993ead4d272027ad301eee');
 my ($state_name) = @_;
@@ -556,14 +568,16 @@ associate($to, retrieve($from));
 rm($from);
 __09f350db8406303ade06d229477d79ad
 
-meta::function('node', <<'__22b928d858f4b2eb4c1744868c2a16a3');
+meta::function('node', <<'__0181653b21635d5df689405cfa705812');
 # Runs node on a collection of source files.
+hook('bin/before-node');
 my $filename  = '/tmp/' . state();
 file::write($filename, join "\n", map(file::read($_), @_));
 
 terminal::message('debug', "starting application using $filename");
 system('node', $filename);
-__22b928d858f4b2eb4c1744868c2a16a3
+hook('bin/after-node');
+__0181653b21635d5df689405cfa705812
 
 meta::function('parents', 'join "\\n", grep s/^parent:://o, sort keys %data;');
 meta::function('perl', <<'__f2b57dd342923797e8e2287c3095803f');
@@ -572,13 +586,15 @@ $@ ? terminal::message('error', $@) : $result;
 __f2b57dd342923797e8e2287c3095803f
 
 meta::function('reload', 'execute($_) for grep ! (/^internal::/ || /^bootstrap::/), keys %data;');
-meta::function('repl', <<'__cb7cc56172d9eecded33b2a55a862bc8');
+meta::function('repl', <<'__0055079581369c4a2606116f0fd60224');
 # Runs a REPL of your source, minus the webserver.
 generate();
+hook('bin/before-repl');
 my ($file, $name) = (state(), name());
 file::write("/tmp/$file-repl.js", -f 'repl.js' ? file::read('repl.js') : "require('repl').start('$name> ')");
 node(dependencies(), "/tmp/$file-repl.js");
-__cb7cc56172d9eecded33b2a55a862bc8
+hook('bin/after-repl');
+__0055079581369c4a2606116f0fd60224
 
 meta::function('rm', <<'__963fdd3d9f6a0ba279b001b1f5679a38');
 for my $to_be_deleted (@_) {
@@ -588,18 +604,22 @@ for my $to_be_deleted (@_) {
 delete @data{@_};
 __963fdd3d9f6a0ba279b001b1f5679a38
 
-meta::function('run', <<'__62eb3bb45be21d86c1c76a51481404d5');
+meta::function('run', <<'__14ec138af359ea27f283bc6cd65144e0');
 # Runs your program by loading the libraries and then your source. Arguments
 # to this function are passed into your program.
 generate();
+hook('bin/before-run');
 node(dependencies(), main());
-__62eb3bb45be21d86c1c76a51481404d5
+hook('bin/after-run');
+__14ec138af359ea27f283bc6cd65144e0
 
-meta::function('run-forever', <<'__dc6245cd98b0eb1e907c7c867e15e570');
+meta::function('run-forever', <<'__5fe4c5479e57bec622b92c70a1cf162a');
 # Runs your application indefinitely, restarting each time it fails.
 # There's a one-second delay between restarts to prevent a tight loop.
-run() while sleep 1;
-__dc6245cd98b0eb1e907c7c867e15e570
+hook('bin/before-run-forever');
+run() while sleep 1 && ! -f 'stop';
+hook('bin/after-run-forever');
+__5fe4c5479e57bec622b92c70a1cf162a
 
 meta::function('save', <<'__ca9ab587c78ff2024ef9ad8ca634db5b');
 if (! verify()) {
@@ -707,26 +727,28 @@ $hash = fast_hash("$data{$_}|$hash") for @keys;
 $hash;
 __e17520e3a5d81d788ae995fd8ac47cb9
 
-meta::function('test', <<'__24e59e7924d6236a002dd637210e5a90');
+meta::function('test', <<'__4538b8251e9edd060676f2a8ca99f53e');
 # Runs your program on each unit test and keeps track of the return codes.
 generate();
--x 'bin/before-test' && system('bin/before-test');
+hook('bin/before-test');
 
 my @log;
 my $failures = 0;
 
 for (<test/*.js>) {
+  hook('bin/before-test-case');
   terminal::message('test', "starting test $_");
   my $status = node(dependencies(), $_);
-  push @log, "fail $_" if $status != 0;
-  push @log, "pass $_" if $status == 0;
+  push @log, "fail $_" and hook('bin/test-failure') if $status != 0;
+  push @log, "pass $_" and hook('bin/test-success') if $status == 0;
   $failures += ! ! $status;
+  hook('bin/after-test-case');
 }
 
 file::write('.test-log', join "\n", @log);
 terminal::message('error', "$failures test(s) failed") if $failures;
 $failures;
-__24e59e7924d6236a002dd637210e5a90
+__4538b8251e9edd060676f2a8ca99f53e
 
 meta::function('unlock', 'chmod_self(sub {$_[0] | 0200});');
 meta::function('update', '&{\'update-from\'}(@_, grep s/^parent:://o, sort keys %data);');
