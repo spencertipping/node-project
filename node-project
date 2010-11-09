@@ -574,6 +574,13 @@ $@ ? terminal::message('error', $@) : $result;
 __f2b57dd342923797e8e2287c3095803f
 
 meta::function('reload', 'execute($_) for grep ! (/^internal::/ || /^bootstrap::/), keys %data;');
+meta::function('repl', <<'__b90e77a3eb680a5cfaa6975a488ce475');
+# Runs a REPL of your source, minus the webserver.
+generate();
+file::write("/tmp/$0-repl.js", "require('repl').start()");
+node(dependencies(), "/tmp/$0-repl.js");
+__b90e77a3eb680a5cfaa6975a488ce475
+
 meta::function('rm', <<'__963fdd3d9f6a0ba279b001b1f5679a38');
 for my $to_be_deleted (@_) {
   terminal::message('warning', "$to_be_deleted does not exist") unless exists $data{$to_be_deleted};
