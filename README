@@ -1,0 +1,17 @@
+You probably don't want to use this project. It's built on self-modifying Perl,
+which is possibly the least usable piece of software I've written.
+
+But, if you really want to use it:
+
+$ mkdir ~/project
+$ cp node-project ~/project
+$ cd ~/project
+$ ./node-project init
+$ ./node-project test
+$ ./node-project run
+$ ./node-project run-forever
+^C
+$ ./node-project sources edit           # Edit the source files that get included
+$ ./node-project libraries edit         # Edit libraries that get downloaded
+$ ./node-project lib                    # Re-download libraries
+$ ./node-project main = something-else.js
