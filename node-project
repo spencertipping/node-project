@@ -558,14 +558,14 @@ associate($to, retrieve($from));
 rm($from);
 __09f350db8406303ade06d229477d79ad
 
-meta::function('node', <<'__49aae94990d7f92cf801015b48c38047');
+meta::function('node', <<'__22b928d858f4b2eb4c1744868c2a16a3');
 # Runs node on a collection of source files.
-my $filename  = '/tmp/' . temporary_name();
+my $filename  = '/tmp/' . state();
 file::write($filename, join "\n", map(file::read($_), @_));
 
 terminal::message('debug', "starting application using $filename");
 system('node', $filename);
-__49aae94990d7f92cf801015b48c38047
+__22b928d858f4b2eb4c1744868c2a16a3
 
 meta::function('parents', 'join "\\n", grep s/^parent:://o, sort keys %data;');
 meta::function('perl', <<'__f2b57dd342923797e8e2287c3095803f');
@@ -574,12 +574,13 @@ $@ ? terminal::message('error', $@) : $result;
 __f2b57dd342923797e8e2287c3095803f
 
 meta::function('reload', 'execute($_) for grep ! (/^internal::/ || /^bootstrap::/), keys %data;');
-meta::function('repl', <<'__b90e77a3eb680a5cfaa6975a488ce475');
+meta::function('repl', <<'__cb7cc56172d9eecded33b2a55a862bc8');
 # Runs a REPL of your source, minus the webserver.
 generate();
-file::write("/tmp/$0-repl.js", "require('repl').start()");
-node(dependencies(), "/tmp/$0-repl.js");
-__b90e77a3eb680a5cfaa6975a488ce475
+my ($file, $name) = (state(), name());
+file::write("/tmp/$file-repl.js", -f 'repl.js' ? file::read('repl.js') : "require('repl').start('$name> ')");
+node(dependencies(), "/tmp/$file-repl.js");
+__cb7cc56172d9eecded33b2a55a862bc8
 
 meta::function('rm', <<'__963fdd3d9f6a0ba279b001b1f5679a38');
 for my $to_be_deleted (@_) {
