@@ -459,7 +459,7 @@ eval join '', <STDIN>;
 die $@ if $@;
 __4c7139ed5c9f65f38a33cf8f8a6cae27
 
-meta::function('init', <<'__ab0fb510f67aa624ce16bb5ac5a86c6d');
+meta::function('init', <<'__47e283d427716d54172f29108c6cabfb');
 # Skeletal directories
 mkdir for qw/bin lib src test/;
 
@@ -491,14 +491,14 @@ EOF
 file::write('test/a-test.js.sdoc', <<EOF, noclobber => 1);
 A sample unit test
 
-caterwaul.clone('std', 'error')(function () {
-  hello_world_message === 'Hello world' || error.fail['Wrong message'];
+caterwaul.clone('std')(function () {
+  hello_world_message === 'Hello world' || null['Wrong message'];
 })();
 EOF
 
 # Preload libraries
 lib();
-__ab0fb510f67aa624ce16bb5ac5a86c6d
+__47e283d427716d54172f29108c6cabfb
 
 meta::function('lib', <<'__e99e47d9a652b2b7f20a290a8133bc6f');
 # Regenerates lib/ directory
