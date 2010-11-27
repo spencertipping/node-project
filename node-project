@@ -725,15 +725,18 @@ $hash = fast_hash("$data{$_}|$hash") for @keys;
 $hash;
 __e17520e3a5d81d788ae995fd8ac47cb9
 
-meta::function('test', <<'__6186a423474620ecce51c2a54367c331');
+meta::function('test', <<'__ea30e1e2f7cb5bb44277a6bd47508dba');
 # Runs your program on each unit test and keeps track of the return codes.
+# If arguments are specified, tests starting with those patterns are run.
 generate();
 hook('bin/before-test');
 
 my @log;
 my $failures = 0;
 
-for (<test/*.js>) {
+my @tests = @_ ? map <test/$_*.js>, @_ : <test/*.js>;
+
+for (@tests) {
   hook('bin/before-test-case', $_);
   terminal::message('test', "starting test $_");
   my $status = node(dependencies(), $_);
@@ -747,7 +750,7 @@ file::write('.test-log', join "\n", @log);
 terminal::message('error', "$failures test(s) failed") if $failures;
 hook('bin/after-test');
 $failures;
-__6186a423474620ecce51c2a54367c331
+__ea30e1e2f7cb5bb44277a6bd47508dba
 
 meta::function('unlock', 'chmod_self(sub {$_[0] | 0200});');
 meta::function('update', '&{\'update-from\'}(@_, grep s/^parent:://o, sort keys %data);');
