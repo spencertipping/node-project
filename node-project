@@ -530,6 +530,17 @@ reload();
 verify();
 __878f141333993ead4d272027ad301eee
 
+meta::function('loc', <<'__dfe41cc08b7be0baa9a396df86e9b8e2');
+# Counts SLOC, whitespace, and total LOC in the codebase.
+my @lines      = map split(/\n/, file::read($_)), dependencies(), main();
+my $comments   = grep /^\s*\/\//, @lines;
+my $whitespace = grep /^\s*$/, @lines;
+my $source     = @lines - $comments - $whitespace;
+
+print "(Figures below include library code)\n";
+print "$source SLOC, $whitespace whitespace lines, $comments comment lines\n";
+__dfe41cc08b7be0baa9a396df86e9b8e2
+
 meta::function('lock', 'chmod_self(sub {$_[0] & 0555});');
 meta::function('ls', <<'__ffe7609f16d647b7eb9ed9693dd12c23');
 my ($options, @criteria) = separate_options(@_);
