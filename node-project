@@ -257,10 +257,13 @@ run this script with the 'usage' argument.
 __c63395cbc6f7160b603befbb2d9b6700
 
 meta::data('default-action', 'shell');
-meta::data('libraries', <<'__1bc82b954f09fc6b40b6dfb6ac442574');
+meta::data('libraries', <<'__f1e4f1475cb33eafda556cf4439a658f');
 # URLs of libraries to be downloaded into the lib/ directory.
 http://spencertipping.com/caterwaul/caterwaul.all.js
-__1bc82b954f09fc6b40b6dfb6ac442574
+http://spencertipping.com/caterwaul.queue.blocking/caterwaul.queue.blocking.js
+http://spencertipping.com/caterwaul.db.file/caterwaul.db.file.js
+http://spencertipping.com/montenegro/montenegro.server.js
+__f1e4f1475cb33eafda556cf4439a658f
 
 meta::data('license', <<'__3c6177256de0fddb721f534c3ad8c0ee');
 MIT License
@@ -288,11 +291,7 @@ __3c6177256de0fddb721f534c3ad8c0ee
 meta::data('main', 'server.js');
 meta::data('name', 'node-project');
 meta::data('quiet', '1');
-meta::data('sources', <<'__a1936a8de1d61b88d47e8df86fd89416');
-# The source files for your program -- all except the server process:
-src/module.js
-__a1936a8de1d61b88d47e8df86fd89416
-
+meta::data('sources', '# The source files for your program -- all except the server process:');
 meta::data('watching', '1');
 meta::function('cat', 'join "\\n", retrieve(@_);');
 meta::function('child', <<'__3eeb4b4fd37a502b53f0008e7835b5de');
@@ -451,21 +450,13 @@ eval join '', <STDIN>;
 die $@ if $@;
 __4c7139ed5c9f65f38a33cf8f8a6cae27
 
-meta::function('init', <<'__47e283d427716d54172f29108c6cabfb');
+meta::function('init', <<'__d2e6ce1b4b31ed8920bf4a29a1ba3780');
 # Skeletal directories
-mkdir for qw/bin lib src test/;
+mkdir for qw/bin lib test/;
 
 # Build utilities
 qx|wget http://spencertipping.com/sdoc/sdoc -O bin/sdoc|;
 chmod 0755, 'bin/sdoc';
-
-# Sample module
-file::write('src/module.js.sdoc', <<EOF, noclobber => 1);
-A sample module that gets included into the main namespace. I am in no way
-condoning using constants for such trivial things, by the way.
-
-hello_world_message = 'Hello world';
-EOF
 
 # Sample server script
 file::write('server.js.sdoc', <<EOF, noclobber => 1);
@@ -490,7 +481,7 @@ EOF
 
 # Preload libraries
 lib();
-__47e283d427716d54172f29108c6cabfb
+__d2e6ce1b4b31ed8920bf4a29a1ba3780
 
 meta::function('lib', <<'__41c8cd76d294f307d0abd8c9efeb8f0a');
 # Regenerates lib/ directory
