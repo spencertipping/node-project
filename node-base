@@ -2385,18 +2385,18 @@ associate($to, retrieve($from));
 rm($from);
 __09f350db8406303ade06d229477d79ad
 
-meta::function('node', <<'__54a25eccb08d754209b747924f4fa622');
+meta::function('node', <<'__bd81719917ff03ed699476a4375af21a');
 # Runs node on a collection of source files and arguments. The format is:
 # node([@source_strings], @process_args);
 my ($sources, @args) = @_;
 
-with_exported(map($data{$_} || $_, @$sources), sub {
+with_exported(@$sources, sub {
   terminal::message('debug', "starting application using $_[0]");
   hook('bin/before-node', $_[0], @args);
   sh('node', $_[0], @args);
   hook('bin/after-node', $_[0], @args);
 });
-__54a25eccb08d754209b747924f4fa622
+__bd81719917ff03ed699476a4375af21a
 
 meta::function('parents', 'join "\\n", grep s/^parent:://o, sort keys %data;');
 meta::function('perl', <<'__f2b57dd342923797e8e2287c3095803f');
