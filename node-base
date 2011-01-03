@@ -2284,10 +2284,10 @@ my ($data) = @_;
 fast_hash($data);
 __7c4145cf6e97dfb9ab04a613866751d3
 
-meta::function('hook', <<'__481d5931579d77d9fe52ff856d69bd0b');
+meta::function('hook', <<'__edb47026faf087bf9f5edca08407e0e2');
 # Takes one or more hook files and executes them if they exist and are executable.
-system @_ if -x $_[0];
-__481d5931579d77d9fe52ff856d69bd0b
+sh(@_) if -x $_[0];
+__edb47026faf087bf9f5edca08407e0e2
 
 meta::function('import', <<'__84d29edfe7ad2119465fdcf7d037ed1c');
 my $name  = pop @_;
@@ -2385,18 +2385,18 @@ associate($to, retrieve($from));
 rm($from);
 __09f350db8406303ade06d229477d79ad
 
-meta::function('node', <<'__e2dd50b29c7bc78aaf213c35a90fa92c');
-# Runs node on a collection of source files.
-retrieve('data::random-number') || associate('data::random-number', rand());
+meta::function('node', <<'__54a25eccb08d754209b747924f4fa622');
+# Runs node on a collection of source files and arguments. The format is:
+# node([@source_strings], @process_args);
+my ($sources, @args) = @_;
 
-hook('bin/before-node');
-my $filename  = '/tmp/' . state();
-file::write($filename, join "\n", map(file::read($_), @_));
-
-terminal::message('debug', "starting application using $filename");
-system('node', $filename);
-hook('bin/after-node');
-__e2dd50b29c7bc78aaf213c35a90fa92c
+with_exported(map($data{$_} || $_, @$sources), sub {
+  terminal::message('debug', "starting application using $_[0]");
+  hook('bin/before-node', $_[0], @args);
+  sh('node', $_[0], @args);
+  hook('bin/after-node', $_[0], @args);
+});
+__54a25eccb08d754209b747924f4fa622
 
 meta::function('parents', 'join "\\n", grep s/^parent:://o, sort keys %data;');
 meta::function('perl', <<'__f2b57dd342923797e8e2287c3095803f');
@@ -2425,19 +2425,15 @@ for my $to_be_deleted (@_) {
 delete @data{@_};
 __963fdd3d9f6a0ba279b001b1f5679a38
 
-meta::function('run', <<'__a7f818a92ac96c27de6e027ade86eb36');
-hook('bin/before-run');
-node(dependencies(), main());
-hook('bin/after-run');
-__a7f818a92ac96c27de6e027ade86eb36
-
-meta::function('run-forever', <<'__5fe4c5479e57bec622b92c70a1cf162a');
+meta::function('run-forever', <<'__76175932a2d2692fc802856c28d0848d');
 # Runs your application indefinitely, restarting each time it fails.
 # There's a one-second delay between restarts to prevent a tight loop.
+# Takes one argument, which is the function to run forever.
+my ($f, @args) = @_;
 hook('bin/before-run-forever');
-run() while sleep 1 && ! -f 'stop';
+&$f(@args) while sleep 0.1 && ! -f 'stop';
 hook('bin/after-run-forever');
-__5fe4c5479e57bec622b92c70a1cf162a
+__76175932a2d2692fc802856c28d0848d
 
 meta::function('save', <<'__ca9ab587c78ff2024ef9ad8ca634db5b');
 if (! verify()) {
@@ -2482,6 +2478,11 @@ return "$meta_function_name('$invocation_name', '$escaped');" unless $escaped =~
 my $delimiter = '__' . fast_hash($contents);
 return "$meta_function_name('$invocation_name', <<'$delimiter');\n$contents\n$delimiter\n";
 __48005281edde632b0df2e346c094b7bd
+
+meta::function('sh', <<'__bd4fa255ba0d6c3f42ad81089ed71254');
+# Run something on the shell.
+system(@_);
+__bd4fa255ba0d6c3f42ad81089ed71254
 
 meta::function('shell', <<'__e9e0709e6ee1dd09521c683322be79e6');
 use Term::ReadLine;
@@ -2712,12 +2713,25 @@ quiet() or terminal::message('debug', join ', ', @_);
 wantarray ? @_ : $_[0];
 __f887289259890731458a66398b628cdc
 
+meta::internal_function('dep', <<'__bad9b934374b176318ed2295b63130bc');
+# A variadic function to prepend cached_dependency:: onto things.
+# Used like this: dep(qw/caterwaul.all.js montenegro.server.js/)
+map "cached_dependency::$_", @_;
+__bad9b934374b176318ed2295b63130bc
+
 meta::internal_function('execute', <<'__4b4efc33bc6767a7aade7f427eedf83f');
 my ($name, %options) = @_;
 my $namespace = namespace($name);
 eval {&{"meta::$namespace"}(attribute($name), retrieve($name))};
 warn $@ if $@ && $options{'carp'};
 __4b4efc33bc6767a7aade7f427eedf83f
+
+meta::internal_function('exported', <<'__4c3902d18fef4006cbaf0d0fd7c8d588');
+# Allocates a temporary file containing the concatenation of attributes you specify,
+# and returns the filename. The filename will be safe for deletion anytime.
+my $filename = temporary_name();
+file::write($filename, cat(@_));
+__4c3902d18fef4006cbaf0d0fd7c8d588
 
 meta::internal_function('fast_hash', <<'__ac70f469e697725cfb87629833434ab1');
 my ($data)     = @_;
@@ -2907,6 +2921,17 @@ $trace =~ s/\(eval (\d+)\)/$locations{$1 - 1}/g;
 $trace;
 __06fad3d85833a6484e426401b95e0206
 
+meta::internal_function('with_exported', <<'__fc4f32c46d95c6deed0414364d1c7410');
+# Like exported(), but removes the file after running some function.
+# Usage is with_exported(@files, sub {...});
+my $f      = pop @_;
+my $name   = exported(@_);
+my $result = eval {&$f($name)};
+terminal::warning("$@ when running with_exported()") if $@;
+unlink $name;
+$result;
+__fc4f32c46d95c6deed0414364d1c7410
+
 meta::library('terminal', <<'__6999988eaf441c9b1282e03e1db427b5');
 # Functions for nice-looking terminal output.
 package terminal;
@@ -2946,7 +2971,7 @@ meta::type::configuration
 parent::/home/spencertipping/bin/object
 __511208c99d8bc2caa3067db9f1824163
 
-meta::parent('/home/spencertipping/bin/object', <<'__274768cabc5dcef6880980c5158cefe2');
+meta::parent('/home/spencertipping/bin/object', <<'__d2c11649577aad680b6bad821cf826a6');
 bootstrap::initialization
 bootstrap::perldoc
 function::cat
@@ -2977,6 +3002,7 @@ function::save
 function::save-state
 function::serialize
 function::serialize_single
+function::sh
 function::shell
 function::size
 function::snapshot
@@ -2992,6 +3018,7 @@ internal_function::chmod_self
 internal_function::complete
 internal_function::debug_trace
 internal_function::execute
+internal_function::exported
 internal_function::fast_hash
 internal_function::file::read
 internal_function::file::write
@@ -3007,6 +3034,7 @@ internal_function::strip
 internal_function::table_display
 internal_function::temporary_name
 internal_function::translate_backtrace
+internal_function::with_exported
 library::terminal
 message_color::state
 message_color::states
@@ -3025,7 +3053,7 @@ meta::type::meta
 meta::type::parent
 meta::type::state
 meta::type::watch
-__274768cabc5dcef6880980c5158cefe2
+__d2c11649577aad680b6bad821cf826a6
 
 meta::parent('/home/spencertipping/bin/repository', <<'__f88c2b0e5725507b3fdb5719fd65e6d3');
 function::dupdate
