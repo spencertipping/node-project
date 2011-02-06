@@ -154,7 +154,7 @@ meta::define_form 'internal_function', sub {
 };
 __34abb44c67c7e282569e28ef6f4d62ab
 
-meta::meta('type::js', 'meta::functor::editable \'js\', extension => \'.js\', inherit => 0;');
+meta::meta('type::js', 'meta::functor::editable \'js\', extension => \'.js\', inherit => 1;');
 meta::meta('type::library', <<'__a9c0193f297bbc96a78eb5e27727fd30');
 meta::configure 'library', extension => '.pl', inherit => 1;
 meta::define_form 'library', sub {
