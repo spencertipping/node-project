@@ -316,7 +316,7 @@ my @libraries = grep(s/^.*\//lib\//o, files_from libraries());
 return @libraries, files_from sources();
 __0d821e5275cc2f202b24eba9be2fb84b
 meta::function('disable', 'chmod_self(sub {$_[0] & 0666});');
-meta::function('edit', <<'__b878c50c3d058d5a344dcb1f52b625a3');
+meta::function('edit', <<'__c74a5d1c0dbd922acaf1397f89190fce');
 my ($name, %options) = @_;
 my $extension = extension_for($name);
 
@@ -324,7 +324,8 @@ die "Attribute $name does not exist." unless exists $data{$name};
 associate($name, invoke_editor_on($data{$name} || "# Attribute $name", %options, attribute => $name, extension => $extension),
           execute => $name !~ /^bootstrap::/);
 save();
-__b878c50c3d058d5a344dcb1f52b625a3
+'';
+__c74a5d1c0dbd922acaf1397f89190fce
 meta::function('enable', 'chmod_self(sub {$_[0] | $_[0] >> 2});');
 meta::function('export', <<'__388e0cc60507443cb1c0cc3e2658cfef');
 # Exports data into a text file.
@@ -480,6 +481,11 @@ die "'$from' does not exist" unless exists $data{$from};
 associate($to, retrieve($from));
 rm($from);
 __52e95180e3c7019116bd798e0da0fdda
+meta::function('name', <<'__6848cbc257e4b6d7441b25acb04e23c9');
+my $name = $0;
+$name =~ s/^.*\///;
+$name;
+__6848cbc257e4b6d7441b25acb04e23c9
 meta::function('node', <<'__e2dd50b29c7bc78aaf213c35a90fa92c');
 # Runs node on a collection of source files.
 retrieve('data::random-number') || associate('data::random-number', rand());
@@ -526,7 +532,7 @@ hook('bin/before-run-forever');
 run() while sleep 1 && ! -f 'stop';
 hook('bin/after-run-forever');
 __5fe4c5479e57bec622b92c70a1cf162a
-meta::function('save', 'dangerous("saving $0", sub {file::write($0, serialize()); $transient{initial} = state()}) if verify();');
+meta::function('save', 'dangerous(\'\', sub {file::write($0, serialize()); $transient{initial} = state()}) if verify();');
 meta::function('save-state', <<'__5c5b586331e25951140ced6442d9fe2b');
 # Creates a named copy of the current state and stores it.
 my ($state_name) = @_;
@@ -557,21 +563,20 @@ my $delimiter = '__' . fast_hash($contents);
 return "$meta_function('$invocation', <<'$delimiter');\n$contents\n$delimiter";
 __ef0f63556d22816ed102d3bbe2172b28
 meta::function('sh', 'system(@_);');
-meta::function('shell', <<'__c3952c1482cd39dfc045ed9efecd6214');
+meta::function('shell', <<'__d7af156228ebbf921ab2ae7f5432c4b8');
 use Term::ReadLine;
 
 my $term = new Term::ReadLine "$0 shell";
 $term->ornaments(0);
 my $attribs = $term->Attribs;
-my $name = $0;
+my $name = name();
 $attribs->{completion_entry_function} = $attribs->{list_completion_function};
 
-$name =~ s/^.*\///o;
-
 my $prompt = sub {
-  my $state = state();
-  my $other = $state ne $transient{initial} ? 33 : 30;
-  "\033[1;32m$name\033[1;${other}m" . substr($state, 0, 4) . "\033[0;0m "};
+  my $state  = state();
+  my $other  = $state ne $transient{initial} ? 33 : 30;
+  my $locked = is_locked() ? "\033[1;31mlocked\033[0;0m" : '';
+  "\033[1;32m$name\033[1;${other}m" . substr($state, 0, 4) . "\033[0;0m$locked "};
 
 while ($attribs->{completion_word} = [sort keys %data, sort keys %externalized_functions], defined($_ = $term->readline(&$prompt()))) {
   my $command_line = $_;
@@ -582,7 +587,7 @@ while ($attribs->{completion_word} = [sort keys %data, sort keys %externalized_f
 
   s/^"(.*)"$/\1/o, s/\\\\"/"/go for @args;
   print dangerous('', sub {&$function_name(@args)}), "\n"}
-__c3952c1482cd39dfc045ed9efecd6214
+__d7af156228ebbf921ab2ae7f5432c4b8
 meta::function('size', 'length(serialize());');
 meta::function('snapshot', <<'__c5d8a624c3eecc183f39b33c9b72f0db');
 my ($name) = @_;
@@ -841,6 +846,7 @@ my $result = file::read($filename);
 unlink $filename;
 $result;
 __32c8b1e3c90bd40d504703e22b26e1f5
+meta::internal_function('is_locked', '!((stat($0))[2] & 0222);');
 meta::internal_function('namespace', <<'__93213d60cafb9627e0736b48cd1f0760');
 my ($name) = @_;
 $name =~ s/::.*$//;
@@ -930,22 +936,20 @@ terminal::warning("$@ when running with_exported()") if $@;
 unlink $name;
 $result;
 __fc4f32c46d95c6deed0414364d1c7410
-meta::library('terminal', <<'__c3e2765e602bc96fa5d2ce04a05547eb');
+meta::library('terminal', <<'__0ec2ca45ce7b9b56c05c9b284a7ee78a');
 # Functions for nice-looking terminal output.
 package terminal;
 
-my $process = $0;
-
-$process =~ s/^.*\///;
+my $process = ::name();
 
 sub message {print STDERR "[$_[0]] $_[1]\n"}
 sub color {
   my ($name, $color) = @_;
-  *{"terminal::$name"} = sub {print STDERR "\033[1;30m$process(\033[1;${color}m$name\033[1;30m)\033[0;0m $_\n" for @_}}
+  *{"terminal::$name"} = sub {chomp $_, print STDERR "\033[1;30m$process(\033[1;${color}m$name\033[1;30m)\033[0;0m $_\n" for @_}}
 
 my %preloaded = (info => 32, progress => 32, state => 34, debug => 34, warning => 33, error => 31);
 color $_, $preloaded{$_} for keys %preloaded;
-__c3e2765e602bc96fa5d2ce04a05547eb
+__0ec2ca45ce7b9b56c05c9b284a7ee78a
 meta::message_color('state', 'purple');
 meta::message_color('states', 'yellow');
 meta::message_color('test', 'purple');
@@ -954,7 +958,7 @@ meta::parent('/home/spencertipping/bin/configuration', <<'__511208c99d8bc2caa306
 meta::type::configuration
 parent::/home/spencertipping/bin/object
 __511208c99d8bc2caa3067db9f1824163
-meta::parent('/home/spencertipping/bin/object', <<'__8a434dcd2367919d9059dc0fa66f6c80');
+meta::parent('/home/spencertipping/bin/object', <<'__24f211bef7e65af28726dfe6075c671f');
 bootstrap::initialization
 bootstrap::perldoc
 function::cat
@@ -978,6 +982,7 @@ function::lock
 function::ls
 function::ls-a
 function::mv
+function::name
 function::parents
 function::perl
 function::reload
@@ -1012,6 +1017,7 @@ internal_function::fnv_hash
 internal_function::hypothetically
 internal_function::internal::main
 internal_function::invoke_editor_on
+internal_function::is_locked
 internal_function::namespace
 internal_function::retrieve
 internal_function::retrieve_with_hooks
@@ -1041,7 +1047,7 @@ meta::type::retriever
 meta::type::state
 retriever::file
 retriever::id
-__8a434dcd2367919d9059dc0fa66f6c80
+__24f211bef7e65af28726dfe6075c671f
 meta::retriever('file', '-f $_[0] ? file::read($_[0]) : undef;');
 meta::retriever('id', '$_[0] =~ /^id::/ ? substr($_[0], 4) : undef;');
 internal::main();
