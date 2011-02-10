@@ -612,32 +612,6 @@ my $hash = fast_hash(fast_hash(scalar @keys) . join '|', @keys);
 $hash = fast_hash("$data{$_}|$hash") for @keys;
 $hash;
 __119111f84c3e32a5536838ac84bc6f10
-meta::function('test', <<'__833c801b45242c312fa30253bd988ef2');
-# Runs your program on each unit test and keeps track of the return codes.
-# If arguments are specified, tests starting with those patterns are run.
-generate();
-hook('bin/before-test');
-
-my @log;
-my $failures = 0;
-
-my @tests = @_ ? map <test/$_*.js>, @_ : <test/*.js>;
-
-for (@tests) {
-  hook('bin/before-test-case', $_);
-  terminal::error('test', "starting test $_");
-  my $status = node(dependencies(), $_);
-  push @log, "fail $_" and hook('bin/test-failure', $_) if $status != 0;
-  push @log, "pass $_" and hook('bin/test-success', $_) if $status == 0;
-  $failures += ! ! $status;
-  hook('bin/after-test-case', $_);
-}
-
-file::write('.test-log', join "\n", @log);
-terminal::error("$failures test(s) failed") if $failures;
-hook('bin/after-test');
-$failures;
-__833c801b45242c312fa30253bd988ef2
 meta::function('touch', 'associate($_, \'\') for @_;');
 meta::function('unlock', 'chmod_self(sub {$_[0] | 0200});');
 meta::function('update', '&{\'update-from\'}(@_, grep s/^parent:://o, sort keys %data);');
