@@ -481,17 +481,19 @@ $@ ? terminal::error($@) : $result;
 __986a274c013b77fe08d29726ce3799fe
 meta::function('reload', 'execute($_) for grep ! /^bootstrap::/, keys %data;');
 meta::function('render', 'file::write(attribute($_) . \'.js\', retrieve($_), mkpath => 1) for grep s/^sdoc::js::/js::/ || /^js::/, keys %data;');
-meta::function('repl', <<'__17de81e24ac3fb6c4a3dda5d78ed780b');
+meta::function('repl', <<'__31ce26877d3622ecdda1025b308ae6aa');
 # Runs a REPL of your source, minus the webserver.
-generate();
+render();
 hook('bin/before-repl');
 
+my $repl_base = retrieve('data::repl-base') or die 'You need to define data::main-base to be a newline-separated list of files to load for the REPL.';
+
 my ($file, $name) = ('/tmp/' . state() . '-repl.js', name());
-file::write($file, -f 'repl.js' ? file::read('repl.js') : "require('repl').start('$name> ')");
-node(dependencies(), $file);
+file::write($file, -f 'repl.js' ? 'repl.js' : "id::require('repl').start('$name> ')");
+node([split(/ /, $repl_base), $file]);
 
 hook('bin/after-repl');
-__17de81e24ac3fb6c4a3dda5d78ed780b
+__31ce26877d3622ecdda1025b308ae6aa
 meta::function('rm', <<'__26d4a78ddb47259b3d8dcabe390426bd');
 exists $data{$_} or terminal::warning("$_ does not exist") for @_;
 delete @data{@_};
