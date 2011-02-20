@@ -487,6 +487,17 @@ with_exported(@$sources, sub {
   hook('bin/after-node', $_[0], @args);
 });
 __0dbdfd4cc670051c20430f7ff167ccab
+meta::function('node-custom', <<'__accbe0c73db6f402198448fd92d5f515');
+# Runs node on a collection of source files and arguments. The format is:
+# &{'node-custom'}([@source_strings], [@node_arguments], @process_args);
+my ($sources, $node_args, @args) = @_;
+
+with_exported(@$sources, sub {
+  hook('bin/before-node-custom', @$node_args, $_[0], @args);
+  sh('node', @$node_args, $_[0], @args);
+  hook('bin/after-node-custom', @$node_args, $_[0], @args);
+});
+__accbe0c73db6f402198448fd92d5f515
 meta::function('parents', 'join "\\n", grep s/^parent:://o, sort keys %data;');
 meta::function('perl', <<'__986a274c013b77fe08d29726ce3799fe');
 my $result = eval(join ' ', @_);
