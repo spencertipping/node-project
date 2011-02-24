@@ -76,6 +76,10 @@ sub meta::functor::editable {
       return associate($attribute, @new_value ? join(' ', @new_value) : join('', <STDIN>)) if $command eq '=' or $command eq 'import' or $options{default} eq 'import' and not defined $command;
       return retrieve($attribute)}}}
 __e3d2ede6edf65ffe2123584b2bd5dab7
+meta::meta('type::alias', <<'__11f7dad00d90cc0277bb72b1364ec535');
+meta::configure 'alias', inherit => 0;
+meta::define_form 'alias', \&meta::bootstrap::implementation;
+__11f7dad00d90cc0277bb72b1364ec535
 meta::meta('type::bootstrap', <<'__297d03fb32df03b46ea418469fc4e49e');
 # Bootstrap attributes don't get executed. The reason for this is that because
 # they are serialized directly into the header of the file (and later duplicated
@@ -272,6 +276,10 @@ meta::data('name', 'node-project');
 meta::data('quiet', '1');
 meta::data('sources', '# The source files for your program -- all except the server process:');
 meta::data('watching', '1');
+meta::function('alias', <<'__82708b00ecb7499701a9f4c6c5fe9839');
+my ($name, @stuff) = @_;
+@stuff ? associate("alias::$name", join ' ', @stuff) : retrieve("alias::$name") || "Undefined alias $name";
+__82708b00ecb7499701a9f4c6c5fe9839
 meta::function('cat', 'join "\\n", retrieve(@_);');
 meta::function('cc', <<'__5c64e1adc128113e1b409e0fbcbe29a2');
 # Stashes a quick one-line continuation. (Used to remind me what I was doing.)
@@ -563,7 +571,7 @@ my $delimiter = '__' . fast_hash($contents);
 return "$meta_function('$invocation', <<'$delimiter');\n$contents\n$delimiter";
 __ef0f63556d22816ed102d3bbe2172b28
 meta::function('sh', 'system(@_);');
-meta::function('shell', <<'__d7af156228ebbf921ab2ae7f5432c4b8');
+meta::function('shell', <<'__faaf329381e39ffc0fa3dd038785e1a5');
 use Term::ReadLine;
 
 my $term = new Term::ReadLine "$0 shell";
@@ -578,16 +586,20 @@ my $prompt = sub {
   my $locked = is_locked() ? "\033[1;31mlocked\033[0;0m" : '';
   "\033[1;32m$name\033[1;${other}m" . substr($state, 0, 4) . "\033[0;0m$locked "};
 
+my $split = sub {grep length, split /\s+|("[^"\\]*(?:\\.)?")/o, join ' ', @_};
+my $resolve_aliases = sub {
+  my ($command, @args) = @_;
+  exists $data{"alias::$command"} ? (&$split(retrieve("alias::$command")), @args) : @_};
+
 while ($attribs->{completion_word} = [sort keys %data, sort keys %externalized_functions], defined($_ = $term->readline(&$prompt()))) {
-  my $command_line = $_;
-  my @args = grep length, split /\s+|("[^"\\]*(?:\\.)?")/o;
-  my $function_name = shift(@args) or next;
+  my @parsed = &$resolve_aliases(&$split($_));
+  my $function_name = shift(@parsed) or next;
 
   terminal::warning("$function_name invalid (use 'ls' to see available commands)"), next unless $externalized_functions{$function_name};
 
-  s/^"(.*)"$/\1/o, s/\\\\"/"/go for @args;
-  print dangerous('', sub {&$function_name(@args)}), "\n"}
-__d7af156228ebbf921ab2ae7f5432c4b8
+  s/^"(.*)"$/\1/o, s/\\\\"/"/go for @parsed;
+  print dangerous('', sub {&$function_name(@parsed)}), "\n"}
+__faaf329381e39ffc0fa3dd038785e1a5
 meta::function('size', 'length(serialize());');
 meta::function('snapshot', <<'__c5d8a624c3eecc183f39b33c9b72f0db');
 my ($name) = @_;
@@ -833,11 +845,13 @@ END {
   enable();
 }
 __b7379923a1c7d2481bad4247b8a71974
-meta::internal_function('invoke_editor_on', <<'__32c8b1e3c90bd40d504703e22b26e1f5');
+meta::internal_function('invoke_editor_on', <<'__1448132d5294a4b8390b4a684d8a78f9');
 my ($data, %options) = @_;
-my $editor   = $options{editor} || $ENV{VISUAL} || $ENV{EDITOR} || die 'Either the $VISUAL or $EDITOR environment variable should be set to a valid editor';
-my $options  = $options{options} || $ENV{VISUAL_OPTS} || $ENV{EDITOR_OPTS} || '';
-my $filename = temporary_name() . "-$options{attribute}$options{extension}";
+my $editor    = $options{editor} || $ENV{VISUAL} || $ENV{EDITOR} || die 'Either the $VISUAL or $EDITOR environment variable should be set to a valid editor';
+my $options   = $options{options} || $ENV{VISUAL_OPTS} || $ENV{EDITOR_OPTS} || '';
+my $attribute = $options{attribute};
+$attribute =~ s/\//-/g;
+my $filename  = temporary_name() . "-$attribute$options{extension}";
 
 file::write($filename, $data);
 system("$editor $options '$filename'");
@@ -845,7 +859,7 @@ system("$editor $options '$filename'");
 my $result = file::read($filename);
 unlink $filename;
 $result;
-__32c8b1e3c90bd40d504703e22b26e1f5
+__1448132d5294a4b8390b4a684d8a78f9
 meta::internal_function('is_locked', '!((stat($0))[2] & 0222);');
 meta::internal_function('namespace', <<'__93213d60cafb9627e0736b48cd1f0760');
 my ($name) = @_;
@@ -936,7 +950,7 @@ terminal::warning("$@ when running with_exported()") if $@;
 unlink $name;
 $result;
 __fc4f32c46d95c6deed0414364d1c7410
-meta::library('terminal', <<'__0ec2ca45ce7b9b56c05c9b284a7ee78a');
+meta::library('terminal', <<'__c52308d05ebb4ff61c5fc36e6d9c7a8a');
 # Functions for nice-looking terminal output.
 package terminal;
 
@@ -945,11 +959,11 @@ my $process = ::name();
 sub message {print STDERR "[$_[0]] $_[1]\n"}
 sub color {
   my ($name, $color) = @_;
-  *{"terminal::$name"} = sub {chomp $_, print STDERR "\033[1;30m$process(\033[1;${color}m$name\033[1;30m)\033[0;0m $_\n" for @_}}
+  *{"terminal::$name"} = sub {chomp($_), print STDERR "\033[1;30m$process(\033[1;${color}m$name\033[1;30m)\033[0;0m $_\n" for map join('', $_), @_}}
 
 my %preloaded = (info => 32, progress => 32, state => 34, debug => 34, warning => 33, error => 31);
 color $_, $preloaded{$_} for keys %preloaded;
-__0ec2ca45ce7b9b56c05c9b284a7ee78a
+__c52308d05ebb4ff61c5fc36e6d9c7a8a
 meta::message_color('state', 'purple');
 meta::message_color('states', 'yellow');
 meta::message_color('test', 'purple');
@@ -958,9 +972,10 @@ meta::parent('/home/spencertipping/bin/configuration', <<'__511208c99d8bc2caa306
 meta::type::configuration
 parent::/home/spencertipping/bin/object
 __511208c99d8bc2caa3067db9f1824163
-meta::parent('/home/spencertipping/bin/object', <<'__24f211bef7e65af28726dfe6075c671f');
+meta::parent('/home/spencertipping/bin/object', <<'__198daf3f2d9bdd5cc38c7dd8533310f4');
 bootstrap::initialization
 bootstrap::perldoc
+function::alias
 function::cat
 function::cc
 function::child
@@ -980,7 +995,6 @@ function::initial-state
 function::load-state
 function::lock
 function::ls
-function::ls-a
 function::mv
 function::name
 function::parents
@@ -1034,6 +1048,7 @@ message_color::states
 meta::configure
 meta::externalize
 meta::functor::editable
+meta::type::alias
 meta::type::bootstrap
 meta::type::data
 meta::type::function
@@ -1047,7 +1062,7 @@ meta::type::retriever
 meta::type::state
 retriever::file
 retriever::id
-__24f211bef7e65af28726dfe6075c671f
+__198daf3f2d9bdd5cc38c7dd8533310f4
 meta::retriever('file', '-f $_[0] ? file::read($_[0]) : undef;');
 meta::retriever('id', '$_[0] =~ /^id::/ ? substr($_[0], 4) : undef;');
 internal::main();
