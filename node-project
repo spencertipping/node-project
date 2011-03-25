@@ -280,6 +280,7 @@ THE SOFTWARE.
 __3c6177256de0fddb721f534c3ad8c0ee
 meta::data('main', 'server.js');
 meta::data('name', 'node-project');
+meta::data('permanent-identity', '395dfae2eb6203bab1cb8effa718a63f');
 meta::data('quiet', '1');
 meta::data('sources', '# The source files for your program -- all except the server process:');
 meta::data('watching', '1');
