@@ -418,18 +418,6 @@ my ($attribute, @criteria) = @_;
 my ($options, @stuff) = separate_options(@criteria);
 grep $_ eq $attribute, select_keys(%$options);
 __5d4fddb72b0715694b83aa0c925a8d04
-meta::function('lib', <<'__1fdcdc3310118791c100b533f6c11070');
-# Regenerates lib/ directory
-hook('bin/before-lib');
-hook('bin/before-lib-clean');
-rm($_) for grep /^js::dependency::/, keys %data;
-hook('bin/after-lib-clean');
-
-hook('bin/before-lib-download');
-qx|cd lib && wget -nv $_| for split /\n+/, libraries();
-hook('bin/after-lib-download');
-hook('bin/after-lib');
-__1fdcdc3310118791c100b533f6c11070
 meta::function('load-state', <<'__ea18db867bd62a294e067f60e6975dcf');
 around_hook('load-state', @_, sub {
   my ($state_name) = @_;
@@ -447,8 +435,10 @@ around_hook('load-state', @_, sub {
   reload();
   verify()});
 __ea18db867bd62a294e067f60e6975dcf
-meta::function('loc', <<'__ce427fbd35d560bbcc08f542f56a306a');
+meta::function('loc', <<'__5a1885d8e743dd80dcda866050f84434');
 # Counts SLOC, whitespace, and total LOC in the codebase.
+hook('before-loc', @_);
+
 my $criteria    = join '|', @_;
 my @attributes  = grep s/^sdoc:://, select_keys('--criteria' => $criteria);
 my $tcomments   = 0;
@@ -469,7 +459,9 @@ my $loc = sub {
 
 terminal::info(map &$loc($_), @attributes);
 terminal::info(&$line($tsource, $twhitespace, $tcomments, 'total'));
-__ce427fbd35d560bbcc08f542f56a306a
+
+hook('after-loc', @_);
+__5a1885d8e743dd80dcda866050f84434
 meta::function('lock', 'hook(\'lock\', chmod_self(sub {$_[0] & 0555}));');
 meta::function('ls', <<'__acdc3ca5777ab9c7c430d493a7555998');
 my ($options, @criteria) = separate_options(@_);
@@ -505,48 +497,40 @@ my $name = $0;
 $name =~ s/^.*\///;
 $name;
 __6848cbc257e4b6d7441b25acb04e23c9
-meta::function('node', <<'__0dbdfd4cc670051c20430f7ff167ccab');
+meta::function('node', <<'__3522fde8f76947a5f70bca33f1ee0016');
 # Runs node on a collection of source files and arguments. The format is:
 # node([@source_strings], @process_args);
 my ($sources, @args) = @_;
 
 with_exported(@$sources, sub {
-  hook('bin/before-node', $_[0], @args);
+  hook('before-node', $_[0], @args);
   sh('node', $_[0], @args);
-  hook('bin/after-node', $_[0], @args);
+  hook('after-node', $_[0], @args);
 });
-__0dbdfd4cc670051c20430f7ff167ccab
-meta::function('node-custom', <<'__accbe0c73db6f402198448fd92d5f515');
+__3522fde8f76947a5f70bca33f1ee0016
+meta::function('node-custom', <<'__c2f4063798c997ec7f78a3543b1240b3');
 # Runs node on a collection of source files and arguments. The format is:
 # &{'node-custom'}([@source_strings], [@node_arguments], @process_args);
 my ($sources, $node_args, @args) = @_;
 
 with_exported(@$sources, sub {
-  hook('bin/before-node-custom', @$node_args, $_[0], @args);
+  hook('before-node-custom', @$node_args, $_[0], @args);
   sh('node', @$node_args, $_[0], @args);
-  hook('bin/after-node-custom', @$node_args, $_[0], @args);
+  hook('after-node-custom', @$node_args, $_[0], @args);
 });
-__accbe0c73db6f402198448fd92d5f515
+__c2f4063798c997ec7f78a3543b1240b3
 meta::function('parents', 'join "\\n", grep s/^parent:://o, sort keys %data;');
 meta::function('perl', <<'__986a274c013b77fe08d29726ce3799fe');
 my $result = eval(join ' ', @_);
 $@ ? terminal::error($@) : $result;
 __986a274c013b77fe08d29726ce3799fe
 meta::function('reload', 'around_hook(\'reload\', sub {execute($_) for grep ! /^bootstrap::/, keys %data});');
-meta::function('render', 'file::write(attribute($_) . \'.js\', retrieve($_), mkpath => 1) for grep s/^sdoc::js::/js::/ || /^js::/, keys %data;');
-meta::function('repl', <<'__31ce26877d3622ecdda1025b308ae6aa');
-# Runs a REPL of your source, minus the webserver.
-render();
-hook('bin/before-repl');
-
-my $repl_base = retrieve('data::repl-base') or die 'You need to define data::main-base to be a newline-separated list of files to load for the REPL.';
-
-my ($file, $name) = ('/tmp/' . state() . '-repl.js', name());
-file::write($file, -f 'repl.js' ? 'repl.js' : "id::require('repl').start('$name> ')");
-node([split(/ /, $repl_base), $file]);
-
-hook('bin/after-repl');
-__31ce26877d3622ecdda1025b308ae6aa
+meta::function('render', <<'__feb4a74c525ddb0d81748b67bc3b4c7a');
+hook('before-render');
+file::write(attribute($_) . '.js',       retrieve($_), mkpath => 1) for grep s/^sdoc::js::/js::/ || /^js::/, keys %data;
+file::write(attribute($_) . '.js.sdocp', retrieve($_), mkpath => 1) for grep s/^sdoc::js::/sdocp::js::/, keys %data;
+hook('after-render');
+__feb4a74c525ddb0d81748b67bc3b4c7a
 meta::function('rm', <<'__7cecfb1691a7bf86741f00058bcc54ca');
 around_hook('rm', @_, sub {
   exists $data{$_} or terminal::warning("$_ does not exist") for @_;
