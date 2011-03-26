@@ -525,12 +525,12 @@ my $result = eval(join ' ', @_);
 $@ ? terminal::error($@) : $result;
 __986a274c013b77fe08d29726ce3799fe
 meta::function('reload', 'around_hook(\'reload\', sub {execute($_) for grep ! /^bootstrap::/, keys %data});');
-meta::function('render', <<'__feb4a74c525ddb0d81748b67bc3b4c7a');
+meta::function('render', <<'__d11b6e7522980db1022b1ccd575bdc30');
 hook('before-render');
-file::write(attribute($_) . '.js',       retrieve($_), mkpath => 1) for grep s/^sdoc::js::/js::/ || /^js::/, keys %data;
-file::write(attribute($_) . '.js.sdocp', retrieve($_), mkpath => 1) for grep s/^sdoc::js::/sdocp::js::/, keys %data;
+file::write(attribute($_) .            '.js',       retrieve($_), mkpath => 1) for grep s/^sdoc::js::/js::/ || /^js::/, keys %data;
+file::write(attribute(attribute($_)) . '.js.sdocp', retrieve($_), mkpath => 1) for grep s/^sdoc::js::/sdocp::js::/, keys %data;
 hook('after-render');
-__feb4a74c525ddb0d81748b67bc3b4c7a
+__d11b6e7522980db1022b1ccd575bdc30
 meta::function('rm', <<'__7cecfb1691a7bf86741f00058bcc54ca');
 around_hook('rm', @_, sub {
   exists $data{$_} or terminal::warning("$_ does not exist") for @_;
