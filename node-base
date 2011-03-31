@@ -435,7 +435,7 @@ around_hook('load-state', @_, sub {
   reload();
   verify()});
 __ea18db867bd62a294e067f60e6975dcf
-meta::function('loc', <<'__5a1885d8e743dd80dcda866050f84434');
+meta::function('loc', <<'__36e0cabf1fe1c1bcaa3c8c708bd82ca0');
 # Counts SLOC, whitespace, and total LOC in the codebase.
 hook('before-loc', @_);
 
@@ -447,6 +447,7 @@ my $tsource     = 0;
 
 my $line = sub {
   my ($source, $whitespace, $comments, $name) = @_;
+  $source ||= 1;                # Prevent divide-by-zero errors
   sprintf "%5d total, %4d SLOC, %5d[%4d%%] whitespace, %5d[%4d%%] comment [%s]",
           $source + $whitespace + $comments, $source, $whitespace, int($whitespace / $source * 100), $comments, int($comments / $source * 100), $name};
 
@@ -461,7 +462,7 @@ terminal::info(map &$loc($_), @attributes);
 terminal::info(&$line($tsource, $twhitespace, $tcomments, 'total'));
 
 hook('after-loc', @_);
-__5a1885d8e743dd80dcda866050f84434
+__36e0cabf1fe1c1bcaa3c8c708bd82ca0
 meta::function('lock', 'hook(\'lock\', chmod_self(sub {$_[0] & 0555}));');
 meta::function('ls', <<'__acdc3ca5777ab9c7c430d493a7555998');
 my ($options, @criteria) = separate_options(@_);
