@@ -210,6 +210,21 @@ meta::meta('type::state', <<'__c1f29670be26f1df6100ffe4334e1202');
 meta::configure 'state', inherit => 0, extension => '.pl';
 meta::define_form 'state', \&meta::bootstrap::implementation;
 __c1f29670be26f1df6100ffe4334e1202
+meta::bootstrap('html', <<'__aa347c4339e71e7acc9ea4fc3d593347');
+<html>
+  <head>
+  <meta http-equiv='content-type' content='text/html; charset=UTF-8' />
+  <link rel='stylesheet' href='http://spencertipping.com/perl-objects/web/style.css'/>
+
+  <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js'></script>
+  <script src='http://spencertipping.com/caterwaul/caterwaul.all.min.js'></script>
+  <script src='http://spencertipping.com/montenegro/montenegro.client.js'></script>
+  <script src='http://spencertipping.com/perl-objects/web/interface.js'></script>
+  </head>
+  <body></body>
+</html>
+
+__aa347c4339e71e7acc9ea4fc3d593347
 meta::bootstrap('initialization', <<'__8774229a1a0ce7fd056d81ba0b077f79');
 #!/usr/bin/perl
 # Run perldoc on this file for documentation.
@@ -394,13 +409,15 @@ my $name = pop @_;
 file::write($name, join "\n", retrieve(@_));
 __388e0cc60507443cb1c0cc3e2658cfef
 meta::function('extern', '&{$_[0]}(retrieve(@_[1 .. $#_]));');
-meta::function('grep', <<'__a32de7e18e12734fff127c8cb904cf53');
+meta::function('grep', <<'__f2f28b81f4bcf4cf9fbe9e27bc9447b0');
 # Looks through attributes for a pattern. Usage is grep pattern [options], where
 # [options] is the format as provided to select_keys.
 
-my $pattern              = shift @_ or die 'Must specify a pattern to search for';
-my ($options, @criteria) = separate_options(@_);
+my ($pattern, @args)     = @_;
+my ($options, @criteria) = separate_options(@args);
 my @attributes           = select_keys(%$options, '--criteria' => join('|', @criteria));
+
+$pattern = qr/$pattern/;
 
 my @m_attributes, @m_line_numbers, @m_lines;
 
@@ -408,7 +425,7 @@ for my $k (@attributes) {
   next unless length $k;
   my @lines = split /\n/, retrieve($k);
   for (0 .. $#lines) {
-    next unless $lines[$_] =~ /$pattern/;
+    next unless $lines[$_] =~ $pattern;
     push @m_attributes,   $k;
     push @m_line_numbers, $_ + 1;
     push @m_lines,        $lines[$_] // ''}} 
@@ -419,7 +436,7 @@ if ($$options{'-c'}) {
   s/^/\033[1;32m/o && s/$/\033[0;0m/o for @m_line_numbers}
 
 table_display([@m_attributes], [@m_line_numbers], [@m_lines]);
-__a32de7e18e12734fff127c8cb904cf53
+__f2f28b81f4bcf4cf9fbe9e27bc9447b0
 meta::function('hash', 'fast_hash(@_);');
 meta::function('hook', <<'__d74d8e2b611342af6a0897e0bd62e6e6');
 my ($hook, @args) = @_;
@@ -1063,7 +1080,8 @@ meta::type::js
 parent::/home/spencertipping/bin/repository
 parent::/home/spencertipping/conjectures/perl-objects/sdoc
 __cb3ede4ac84dd70a220e31df5e90c4d6
-meta::parent('/home/spencertipping/bin/object', <<'__febaa835f7b66f7fdcb99de9560857bd');
+meta::parent('/home/spencertipping/bin/object', <<'__40cc4bb813030b3d1a49faba89a17775');
+bootstrap::html
 bootstrap::initialization
 bootstrap::perldoc
 function::alias
@@ -1160,7 +1178,7 @@ meta::type::retriever
 meta::type::state
 retriever::file
 retriever::id
-__febaa835f7b66f7fdcb99de9560857bd
+__40cc4bb813030b3d1a49faba89a17775
 meta::parent('/home/spencertipping/bin/repository', <<'__f88c2b0e5725507b3fdb5719fd65e6d3');
 function::dupdate
 meta::type::cached_dependency
