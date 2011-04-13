@@ -343,6 +343,7 @@ meta::function('cc', <<'__c4d52b1d8f52a480f07b81b93c3aac7b');
 # Stashes a quick one-line continuation. (Used to remind me what I was doing.)
 @_ ? associate('data::current-continuation', hook('set-cc', join(' ', @_))) : retrieve('data::current-continuation');
 __c4d52b1d8f52a480f07b81b93c3aac7b
+meta::function('ccc', 'rm(\'data::current-continuation\');');
 meta::function('child', <<'__f69646398c3123d3d939a7f2b3156606');
 around_hook('child', @_, sub {
   my ($child_name) = @_;
@@ -387,11 +388,11 @@ for (keys %dependencies) {
   terminal::info("Retrieving $dependencies{$_} as $_");
   associate("cached_dependency::$_", LWP::Simple::get($dependencies{$_}))}
 __1c0273217c5b9f2756bb14a4a00aa7e2
-meta::function('edit', <<'__fd926994eabc382472a1d11b61a1dc2e');
+meta::function('edit', <<'__36bd3f2c1165d0c041b0fa9a96a85378');
 my ($name, %options) = @_;
 my $extension = extension_for($name);
 
-die "Attribute $name does not exist" unless exists $data{$name};
+die "$name is virtual or does not exist" unless exists $data{$name};
 die "$name is inherited; use 'edit $name -f' to edit anyway" unless is($name, '-u') || exists $options{'-f'};
 
 around_hook('edit', @_, sub {
@@ -399,7 +400,7 @@ around_hook('edit', @_, sub {
             execute => $name !~ /^bootstrap::/)});
 save() unless $data{'data::edit::no-save'};
 '';
-__fd926994eabc382472a1d11b61a1dc2e
+__36bd3f2c1165d0c041b0fa9a96a85378
 meta::function('enable', 'hook(\'enable\', chmod_self(sub {$_[0] | $_[0] >> 2}));');
 meta::function('export', <<'__388e0cc60507443cb1c0cc3e2658cfef');
 # Exports data into a text file.
@@ -647,6 +648,69 @@ my ($start, $end) = split /,/o, $comments_for_extension{lc($other_extension || $
 join '', map(is_code($_) || is_blank($_) ? ($_ =~ /^\s*c\n(.*)$/so ? $1 : $_) : comment($_, $start, $end), paragraphs retrieve($filename)),
          "\n$start $generated_string $end\n";
 __060cfa349e629eb90a82b87a8ba00c1d
+meta::function('sdoc-html', <<'__5fffe6139a81ff67ee063ebcbfadad2a');
+# Converts SDoc to logically-structured HTML. Sections end up being nested,
+# and code sections and examples are marked as such. For instance, here is some
+# sample output:
+
+# <div class='section level1'>
+#   <h1 class='title'>Foo</h1>
+#   <p>This is a paragraph...</p>
+#   <p>This is another paragraph...</p>
+#   <pre class='code'>int main () {return 0;}</pre>
+#   <pre class='quoted'>int main () {return 0} // Won't compile</pre>
+#   <div class='section level2'>
+#     <h2 class='title'>Bar</h2>
+#     ...
+#   </div>
+# </div>
+
+# It is generally good about escaping things that would interfere with HTML,
+# but within text paragraphs it lets you write literal HTML. The heuristic is
+# that known tags that are reasonably well-formed are allowed, but unknown ones
+# are escaped.
+
+my ($attribute)   = @_;
+my @paragraphs    = split /\n(?:\s*\n)+/, retrieve($attribute);
+
+my $known_tags    = join '|', qw[html head body meta script style link title div a span input button textarea option select form label iframe blockquote code caption
+                                 table tbody tr td th thead tfoot img h1 h2 h3 h4 h5 h6 li ol ul noscript p pre samp sub sup var canvas audio video];
+my $section_level = 0;
+my @markup;
+
+my $indent        = sub {'  ' x ($_[0] || $section_level)};
+my $unindent      = sub {my $spaces = '  ' x ($section_level - 1); s/^$spaces//gm};
+
+my $escape_all    = sub {s/&/&amp;/g; s/</&lt;/g; s/>/&gt;/g};
+my $escape_some   = sub {s/&/&amp;/g; s/<(?!\/|($known_tags)[^>]*>.*<\/\1>)/&lt;/g};
+
+my $code          = sub {&$escape_all(); &$unindent();             push @markup, &$indent() . "<pre class='code'>$_</pre>"};
+my $quoted        = sub {&$escape_all(); &$unindent(); s/^\|\s?//; push @markup, &$indent() . "<pre class='quoted'>$_</pre>"};
+
+my $paragraph     = sub {&$escape_some(); push @markup, &$indent() . "<p>$_</p>"};
+
+my $section       = sub {my $h = $_[0] > 6 ? 6 : $_[0]; push @markup, &$indent($_[0] - 1) . "<div class='section level$_[0]'>", &$indent($_[0]) . "<h$h>$2</h$h>"};
+my $close_section = sub {push @markup, &$indent($_[0]) . "</div>"};
+
+my $title = sub {
+  my $indentation = (length($1) >> 1) + 1;
+  &$close_section($section_level) while $section_level-- >= $indentation;
+  &$section($indentation);
+  $section_level = $indentation;
+};
+
+for (@paragraphs) {
+  &$code(),   next unless /^\h*[A-Z|]/;
+  &$quoted(), next if     /^\h*\|/;
+
+  &$title(), s/^.*\n// if /^(\s*)(\S.*)\.\n([^\n]+)/ and length("$1$2") - 10 < length($3);
+  &$paragraph();
+}
+
+&$close_section($section_level) while $section_level--;
+
+join "\n", @markup;
+__5fffe6139a81ff67ee063ebcbfadad2a
 meta::function('sdocp', <<'__8b7ed5bbd537234ae53c0691b6d02c97');
 # Renders an attribute as SDocP. This logic was taken directly from the sdoc script.
 my $attribute = retrieve($_[0]);
@@ -678,7 +742,10 @@ my $delimiter = '__' . fast_hash($contents);
 return "$meta_function('$invocation', <<'$delimiter');\n$contents\n$delimiter";
 __ef0f63556d22816ed102d3bbe2172b28
 meta::function('sh', 'system(@_);');
-meta::function('shell', 'shell::repl();');
+meta::function('shell', <<'__dc8238ad70b1e02eaf230c4f1bd21690');
+terminal::cc(retrieve('data::current-continuation')) if length $data{'data::current-continuation'};
+shell::repl();
+__dc8238ad70b1e02eaf230c4f1bd21690
 meta::function('size', 'length(serialize());');
 meta::function('snapshot', <<'__d3d84a364524eeb8ee90623f545187e8');
 my ($name) = @_;
@@ -1004,7 +1071,7 @@ terminal::warning("$@ when running with_exported()") if $@;
 unlink $name;
 $result;
 __fc4f32c46d95c6deed0414364d1c7410
-meta::library('shell', <<'__7df727b3be0d8579da3fee5144041f75');
+meta::library('shell', <<'__528f486cc4d9eb390e4c350b8727c751');
 # Functions for shell parsing and execution.
 package shell;
 use Term::ReadLine;
@@ -1029,8 +1096,9 @@ sub prompt {
   my $state   = $options{state} // ::state();
   my $other   = $state ne $transient{initial} ? 33 : 30;
   my $locked  = ::is_locked() ? "\033[1;31mlocked\033[0;0m" : '';
+  my $cc      = length ::retrieve('data::current-continuation') ? "\033[1;36mcc\033[0;0m" : '';
 
-  "\033[1;32m$name\033[1;${other}m" . substr($state, 0, 4) . "\033[0;0m$locked\033[1;34m$options{stuff}\033[0;0m "}
+  "\033[1;32m$name\033[1;${other}m" . substr($state, 0, 4) . "\033[0;0m$cc$locked\033[1;34m$options{stuff}\033[0;0m "}
 
 sub repl {
   my %options = @_;
@@ -1046,7 +1114,7 @@ sub repl {
   my $command      = $options{command}      || sub {my ($command) = @_; ::around_hook('shell-command', $command, sub {print ::dangerous('', sub {execute($command)}), "\n"})};
 
   &$command(&$parse($_)) while ($attribs->{completion_word} = &$autocomplete(), defined($_ = $term->readline(&$prompt())))}
-__7df727b3be0d8579da3fee5144041f75
+__528f486cc4d9eb390e4c350b8727c751
 meta::library('terminal', <<'__c52308d05ebb4ff61c5fc36e6d9c7a8a');
 # Functions for nice-looking terminal output.
 package terminal;
@@ -1061,6 +1129,7 @@ sub color {
 my %preloaded = (info => 32, progress => 32, state => 34, debug => 34, warning => 33, error => 31);
 color $_, $preloaded{$_} for keys %preloaded;
 __c52308d05ebb4ff61c5fc36e6d9c7a8a
+meta::message_color('cc', '36');
 meta::message_color('state', 'purple');
 meta::message_color('states', 'yellow');
 meta::message_color('test', 'purple');
@@ -1080,13 +1149,14 @@ meta::type::js
 parent::/home/spencertipping/bin/repository
 parent::/home/spencertipping/conjectures/perl-objects/sdoc
 __cb3ede4ac84dd70a220e31df5e90c4d6
-meta::parent('/home/spencertipping/bin/object', <<'__40cc4bb813030b3d1a49faba89a17775');
+meta::parent('/home/spencertipping/bin/object', <<'__35806b23f7e9db5fec1ffe42bee778b1');
 bootstrap::html
 bootstrap::initialization
 bootstrap::perldoc
 function::alias
 function::cat
 function::cc
+function::ccc
 function::child
 function::clone
 function::cp
@@ -1158,6 +1228,7 @@ internal_function::translate_backtrace
 internal_function::with_exported
 library::shell
 library::terminal
+message_color::cc
 message_color::state
 message_color::states
 meta::configure
@@ -1178,21 +1249,28 @@ meta::type::retriever
 meta::type::state
 retriever::file
 retriever::id
-__40cc4bb813030b3d1a49faba89a17775
+__35806b23f7e9db5fec1ffe42bee778b1
 meta::parent('/home/spencertipping/bin/repository', <<'__f88c2b0e5725507b3fdb5719fd65e6d3');
 function::dupdate
 meta::type::cached_dependency
 parent::/home/spencertipping/bin/configuration
 __f88c2b0e5725507b3fdb5719fd65e6d3
-meta::parent('/home/spencertipping/conjectures/perl-objects/sdoc', <<'__6b80e7e220f0ce19851eaf5bb9cf2fc7');
+meta::parent('/home/spencertipping/conjectures/perl-objects/sdoc', <<'__1ef271cd8c077e0c25c52c8c3bed1818');
 function::sdoc
+function::sdoc-html
 function::sdocp
 meta::type::sdoc
 parent::/home/spencertipping/bin/object
+retriever::html-sdoc
 retriever::sdoc
 retriever::sdocp
-__6b80e7e220f0ce19851eaf5bb9cf2fc7
+__1ef271cd8c077e0c25c52c8c3bed1818
 meta::retriever('file', '-f $_[0] ? file::read($_[0]) : undef;');
+meta::retriever('html-sdoc', <<'__54d22ab83d9f3f2e27ef51033b4817a7');
+my ($attribute) = @_;
+return undef unless $attribute =~ s/^html::/sdoc::/ and exists $data{$attribute};
+&{'sdoc-html'}($attribute);
+__54d22ab83d9f3f2e27ef51033b4817a7
 meta::retriever('id', '$_[0] =~ /^id::/ ? substr($_[0], 4) : undef;');
 meta::retriever('sdoc', 'exists $data{"sdoc::$_[0]"} ? sdoc("sdoc::$_[0]") : undef;');
 meta::retriever('sdocp', <<'__fef74cd94fa8761618662802f0bfc171');
