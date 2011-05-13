@@ -864,6 +864,14 @@ terminal::error("Verification failed; expected $state but got $observed from $ot
 hook('after-verify', $result, observed => $observed, expected => $state);
 $result;
 __
+meta::hook('after-render::dependencies', <<'__');
+# Maintain dependencies as local files.
+file::write($_, retrieve("cached_dependency::$_")) for grep s/^cached_dependency:://, keys %data;
+__
+meta::hook('after-render::javascript', <<'__');
+# Render preprocessed JS files.
+file::write($_, retrieve("pp::js::$_")) for grep s/^sdoc::js:://, keys %data;
+__
 meta::hook('after-render::markup', <<'__');
 file::write(attribute($_) . '.html', retrieve($_)) for grep s/^sdoc::html::/html::/x, keys %data;
 file::write(attribute($_) . '.css',  retrieve($_)) for grep s/^sdoc::css:: /css::/x,  keys %data;
