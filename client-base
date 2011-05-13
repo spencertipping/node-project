@@ -870,7 +870,7 @@ file::write($_, retrieve("cached_dependency::$_")) for grep s/^cached_dependency
 __
 meta::hook('after-render::javascript', <<'__');
 # Render preprocessed JS files.
-file::write($_, retrieve("pp::js::$_")) for grep s/^sdoc::js:://, keys %data;
+file::write("$_.js", retrieve("pp::js::$_")) for grep s/^sdoc::js:://, keys %data;
 __
 meta::hook('after-render::markup', <<'__');
 file::write(attribute($_) . '.html', retrieve($_)) for grep s/^sdoc::html::/html::/x, keys %data;
