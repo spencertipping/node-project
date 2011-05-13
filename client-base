@@ -301,8 +301,10 @@ meta::cache('parent-identification', <<'__');
 __
 meta::configuration('dependencies', <<'__');
 # Named dependencies:
-#caterwaul.all.js:     http://spencertipping.com/caterwaul/caterwaul.all.min.js
-#montenegro.server.js: http://spencertipping.com/montenegro/montenegro.server.js
+#jquery.js:            http://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.js
+#caterwaul.js:         http://caterwauljs.org/caterwaul.js
+#caterwaul.std.pre.js: http://caterwauljs.org/build/extensions/std.pre.js
+#caterwaul.ui.pre.js:  http://caterwauljs.org/build/extensions/ui.pre.js
 __
 meta::data('default-action', 'shell');
 meta::data('libraries', <<'__');
