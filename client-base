@@ -349,9 +349,10 @@ meta::data('page-template', <<'__');
 <html>
   <head>
   <title></title>
-  <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.js'></script>
-  <script src='http://spencertipping.com/caterwaul/caterwaul.all.js'></script>
-  <script src='http://spencertipping.com/montenegro/montenegro.client.js'></script>
+  <script src='jquery.js'></script>
+  <script src='caterwaul.js'></script>
+  <script src='caterwaul.std.pre.js'></script>
+  <script src='caterwaul.ui.pre.js'></script>
   <script src='__SCRIPT__'></script>
   <link rel='stylesheet' href='__STYLE__'/>
   </head>
