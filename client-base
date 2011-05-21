@@ -305,6 +305,7 @@ meta::cache('parent-identification', <<'__');
 /home/spencertipping/bin/object 99aeabc9ec7fe80b1b39f5e53dc7e49e
 /home/spencertipping/bin/repository 05bc3036c343fdb8aec5b0be12a9b19e
 /home/spencertipping/conjectures/perl-objects/sdoc a1e8480e579614c01dabeecf0f963bcc
+object 99aeabc9ec7fe80b1b39f5e53dc7e49e
 preprocessor 70dae4b46eb4e06798ec6f38d17d4c7b
 __
 meta::configuration('dependencies', <<'__');
@@ -763,9 +764,9 @@ my $indent        = sub {'  ' x ($_[0] || $section_level)};
 my $unindent      = sub {my $spaces = '  ' x ($section_level - 1); s/^$spaces//gm};
 
 my $escape_all    = sub {s/&/&amp;/g; s/</&lt;/g; s/>/&gt;/g};
-my $escape_some   = sub {s/&/&amp;/g; s/<(?!\/|($known_tags)[^>]*>.*<\/\1>)/&lt;/g};
+my $escape_some   = sub {s/&/&amp;/g; s/<(?!\/|($known_tags)[^>]*>.*<\/\1>)/&lt;/gs};
 
-my $code          = sub {&$escape_all(); &$unindent();                             push @markup, &$indent() . "<pre class='code'>$_</pre>"};
+my $code          = sub {&$escape_all(); &$unindent(); s/^c\n//;                   push @markup, &$indent() . "<pre class='code'>$_</pre>"};
 my $quoted        = sub {&$escape_all(); &$unindent(); s/^\|(\s?)/ \1/; s/^  //mg; push @markup, &$indent() . "<pre class='quoted'>$_</pre>"};
 
 my $paragraph     = sub {&$escape_some(); push @markup, &$indent() . "<p>$_</p>"};
@@ -1315,7 +1316,7 @@ internal_function::dep                                      bad9b934374b176318ed
 message_color::test                                         14e993fdf2c62df353613c243dc9053b
 meta::type::js                                              f7a0080116fecebf7abb030b0156f44d
 parent::/home/spencertipping/bin/repository                 0d317b0c917f59703ee01bf3cf03ad13
-parent::/home/spencertipping/conjectures/perl-objects/sdoc  6a5c7ec116abef8a7c7142d1f5fae0d8
+parent::/home/spencertipping/conjectures/perl-objects/sdoc  e3fc5cfcb42fc929d07a588023f9be5d
 __
 meta::parent('/home/spencertipping/bin/object', <<'__');
 bootstrap::html                         9b839f4c0c8d6bb18bf6d9d0e670e497
@@ -1430,7 +1431,7 @@ parent::/home/spencertipping/bin/configuration  e4d22dc2215115982f6b79ed0ce22a42
 __
 meta::parent('/home/spencertipping/conjectures/perl-objects/sdoc', <<'__');
 function::sdoc                           060cfa349e629eb90a82b87a8ba00c1d
-function::sdoc-html                      e53ef666b3ae25af0050c3ed582fca8e
+function::sdoc-html                      4ec4c1710abddb753db5557d79e6b165
 function::sdocp                          8b7ed5bbd537234ae53c0691b6d02c97
 meta::type::sdoc                         392c65eddae300e2aa67014b85884979
 parent::/home/spencertipping/bin/object  9088a9cf9c95b7c1184f1c3b528824ba
