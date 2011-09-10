@@ -701,8 +701,9 @@ my $pattern = join '|', @_;
 __
 meta::function('reload', 'around_hook(\'reload\', sub {execute($_) for grep ! /^bootstrap::/, keys %data});');
 meta::function('render', <<'__');
-hook('before-render');
-hook('after-render');
+hook('before-render', @_);
+hook('after-render', @_);
+
 __
 meta::function('rm', <<'__');
 around_hook('rm', @_, sub {
